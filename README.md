@@ -2,7 +2,11 @@
 
 Quick notes and a daily journal in one TUI. Pinnable stickies on the left, dated journal entries on the right, fast keyboard editing for both. Built with Go and [Bubble Tea](https://github.com/charmbracelet/bubbletea).
 
-## Quick Install
+Current release: **v1.0.0**.
+
+![stickies screenshot](docs/screenshot.png)
+
+## Install
 
 Supported platforms: Linux and macOS. On Windows, use WSL.
 
@@ -23,12 +27,20 @@ make install
 ## Usage
 
 ```bash
-stickies                # launch the TUI
+stickies                       # launch the TUI
 stickies --version
-stickies --data ./mydir # override data directory
+stickies --data ./mydir        # override data directory
+
+# Pipeable subcommands (no TUI):
+stickies ls                    # list stickies: id<TAB>pin<TAB>title
+stickies cat <id|title>        # print a sticky's body to stdout
+stickies today                 # print today's journal entry
+stickies day 2026-04-01        # print a specific day
+stickies days                  # list all journal dates
+stickies search "todo"         # grep across stickies + journal
 ```
 
-Data lives in `~/.local/share/stickies/` by default. The `$EDITOR` env var is honored when editing notes externally (`e` key).
+Data lives in `~/.local/share/stickies/` by default (overridable via `$STICKIES_DIR` or `--data`). The `$EDITOR` env var is honored when editing notes externally (`o` key).
 
 ## Keybinds
 
@@ -36,26 +48,34 @@ Data lives in `~/.local/share/stickies/` by default. The `$EDITOR` env var is ho
 |----------------|-------------------------------------|
 | `q`            | Quit                                |
 | `?`            | Toggle help                         |
-| `tab`          | Switch between stickies and journal |
-| `j`/`k`, `↑/↓` | Move selection                      |
-| `g` / `G`      | Jump to top / bottom                |
-| `n`            | New sticky                          |
-| `t`            | New tagged sticky                   |
-| `enter` / `E`  | Edit selected (in-app)              |
-| `e`            | Edit selected in `$EDITOR`          |
-| `o`            | Open in default app                 |
-| `y`            | Yank/copy contents                  |
-| `p`            | Toggle pin                          |
-| `D`            | Delete (with confirm)               |
-| `/`            | Search/filter                       |
-| `esc`          | Cancel mode / close overlay         |
+| `1` / `2` / `3`  | Stickies / Journal / Search page  |
+| `tab` / `shift+tab` | Cycle pages                    |
+| `j`/`k`, `↑/↓`   | Move selection                    |
+| `g` / `G`        | Jump to top / bottom              |
+| `ctrl+d`/`ctrl+u`| Page down / up                    |
+| `n`              | New sticky                        |
+| `t`              | Jump to / create today's journal  |
+| `enter` / `E`    | Edit body (in-app)                |
+| `e`              | Edit tags (stickies only)         |
+| `o`              | Open in `$EDITOR`                 |
+| `y`              | Yank/copy body to clipboard       |
+| `p`              | Toggle pin (stickies only)        |
+| `D`              | Delete (with confirm)             |
+| `/`              | Search across stickies + journal  |
+| `ctrl+s`         | Save body (in edit mode)          |
+| `esc`            | Cancel mode / close overlay       |
+| `q` / `ctrl+c`   | Quit                              |
 
-## Configuration
+## Environment
 
-| Env var             | Effect                                    |
-|---------------------|-------------------------------------------|
-| `EDITOR`            | External editor for `e` keybind           |
-| `--data <dir>`      | Override data directory at launch         |
+The following environment variables are honored:
+
+| Var / flag       | Effect                                              |
+|------------------|-----------------------------------------------------|
+| `$VISUAL`        | External editor for `o` (preferred over `$EDITOR`)  |
+| `$EDITOR`        | External editor fallback (`vi` if unset)            |
+| `$STICKIES_DIR`  | Override data directory                             |
+| `--data <dir>`   | Override data directory (wins over env)             |
 
 ## License
 

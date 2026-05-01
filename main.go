@@ -12,30 +12,53 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-var version = "dev"
+var version = "v1.0.0"
 
 func main() {
+	// Subcommand dispatch (positional verb before flags) for piping.
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "ls", "list", "cat", "show", "get", "today", "day", "days", "search", "grep":
+			dir, err := resolveDataDir(envDataDir())
+			if err != nil {
+				log.Fatal(err)
+			}
+			if err := ensureDirs(dir); err != nil {
+				log.Fatal(err)
+			}
+			os.Exit(runCLI(os.Args[1], os.Args[2:], dir, os.Stdout))
+		}
+	}
+
 	showVersion := flag.Bool("version", false, "Print version and exit")
-	dataDir := flag.String("data", "", "Override data directory")
+	dataDir := flag.String("data", "", "Override data directory (default: $STICKIES_DIR or ~/.local/share/stickies)")
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "stickies — quick notes + daily journal TUI\n\n")
-		fmt.Fprintf(os.Stderr, "Usage: stickies [flags]\n\n")
+		fmt.Fprintf(os.Stderr, "Usage:\n")
+		fmt.Fprintf(os.Stderr, "  stickies [flags]              launch TUI\n")
+		fmt.Fprintf(os.Stderr, "  stickies ls                   list stickies (id\\ttitle)\n")
+		fmt.Fprintf(os.Stderr, "  stickies cat <id|title>       print sticky body to stdout\n")
+		fmt.Fprintf(os.Stderr, "  stickies today                print today's journal entry\n")
+		fmt.Fprintf(os.Stderr, "  stickies day <YYYY-MM-DD>     print specified day's entry\n")
+		fmt.Fprintf(os.Stderr, "  stickies days                 list journal dates\n")
+		fmt.Fprintf(os.Stderr, "  stickies search <query>       grep across stickies+journal\n\n")
+		fmt.Fprintf(os.Stderr, "Flags:\n")
 		flag.PrintDefaults()
 	}
 	flag.Parse()
 
 	if *showVersion {
-		fmt.Println("stickies " + version)
+		fmt.Fprintln(os.Stdout, "stickies "+version)
 		return
 	}
 
-	dir := *dataDir
-	if dir == "" {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			log.Fatal(err)
-		}
-		dir = filepath.Join(home, ".local", "share", "stickies")
+	override := *dataDir
+	if override == "" {
+		override = envDataDir()
+	}
+	dir, err := resolveDataDir(override)
+	if err != nil {
+		log.Fatal(err)
 	}
 	if err := ensureDirs(dir); err != nil {
 		log.Fatal(err)
@@ -84,4 +107,17 @@ func main() {
 	if _, err := p.Run(); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func envDataDir() string { return os.Getenv("STICKIES_DIR") }
+
+func resolveDataDir(override string) (string, error) {
+	if override != "" {
+		return override, nil
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(home, ".local", "share", "stickies"), nil
 }

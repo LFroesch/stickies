@@ -487,7 +487,10 @@ func (m model) renderHelpPanel() string {
 		"  ctrl+s          save · close",
 		"  esc             cancel",
 		"",
-		dimTextStyle.Render("data: ~/.local/share/stickies/"),
+		dateHeaderStyle.Render("settings"),
+		"  config dir: " + dimTextStyle.Render(m.dataDir),
+		"  $EDITOR    " + dimTextStyle.Render("override external editor"),
+		"  $STICKIES_DIR " + dimTextStyle.Render("override data directory"),
 	}
 	innerH := h - 2
 	startIdx := m.helpScroll
@@ -561,38 +564,91 @@ func padToHeight(s string, h int) string {
 	return strings.Join(lines, "\n")
 }
 
-// wrapText hard-wraps a body string to width w, preserving existing newlines.
+// wrapText word-wraps a body string to width w, preserving existing newlines.
+// Falls back to character-break only for words longer than w.
 func wrapText(s string, w int) string {
 	if w <= 0 {
 		return s
 	}
 	var out []string
 	for _, line := range strings.Split(s, "\n") {
-		if lipgloss.Width(line) <= w {
-			out = append(out, line)
-			continue
-		}
-		runes := []rune(line)
-		cur := make([]rune, 0, w)
-		curW := 0
-		flush := func() {
-			out = append(out, string(cur))
-			cur = cur[:0]
-			curW = 0
-		}
-		for _, r := range runes {
-			rw := lipgloss.Width(string(r))
-			if curW+rw > w {
-				flush()
-			}
-			cur = append(cur, r)
-			curW += rw
-		}
-		if len(cur) > 0 {
-			flush()
-		}
+		out = append(out, wrapLineWords(line, w)...)
 	}
 	return strings.Join(out, "\n")
+}
+
+func wrapLineWords(line string, w int) []string {
+	if line == "" {
+		return []string{""}
+	}
+	if lipgloss.Width(line) <= w {
+		return []string{line}
+	}
+	// Preserve leading whitespace of the original line.
+	indent := ""
+	for _, r := range line {
+		if r == ' ' || r == '\t' {
+			indent += string(r)
+		} else {
+			break
+		}
+	}
+	words := strings.Fields(line)
+	var out []string
+	cur := indent
+	curW := lipgloss.Width(indent)
+	for _, word := range words {
+		ww := lipgloss.Width(word)
+		if ww > w {
+			if cur != "" {
+				out = append(out, cur)
+				cur = ""
+				curW = 0
+			}
+			rs := []rune(word)
+			start := 0
+			for start < len(rs) {
+				end := start
+				cw := 0
+				for end < len(rs) {
+					rw := lipgloss.Width(string(rs[end]))
+					if cw+rw > w {
+						break
+					}
+					cw += rw
+					end++
+				}
+				if end == len(rs) {
+					cur = string(rs[start:])
+					curW = cw
+					break
+				}
+				out = append(out, string(rs[start:end]))
+				start = end
+			}
+			continue
+		}
+		sep := 0
+		if cur != "" && cur != indent {
+			sep = 1
+		}
+		if curW+sep+ww > w {
+			out = append(out, cur)
+			cur = word
+			curW = ww
+			continue
+		}
+		if sep == 1 {
+			cur += " "
+			curW++
+		}
+		cur += word
+		curW += ww
+	}
+	if cur != "" {
+		out = append(out, cur)
+	}
+	return out
 }
 
 func truncate(s string, w int) string {

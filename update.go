@@ -116,6 +116,24 @@ func (m model) handleNormalKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.mode = modeSearch
 		m.searchInput.Focus()
 		return m, nil
+	case "tab":
+		m.page = (m.page + 1) % 3
+		if m.page == pageJournal {
+			m.ensureJournalCursor()
+		} else if m.page == pageSearch {
+			m.mode = modeSearch
+			m.searchInput.Focus()
+		}
+		return m, nil
+	case "shift+tab":
+		m.page = (m.page + 2) % 3
+		if m.page == pageJournal {
+			m.ensureJournalCursor()
+		} else if m.page == pageSearch {
+			m.mode = modeSearch
+			m.searchInput.Focus()
+		}
+		return m, nil
 	case "/":
 		m.page = pageSearch
 		m.mode = modeSearch

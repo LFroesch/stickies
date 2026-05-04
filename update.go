@@ -275,10 +275,12 @@ func (m model) handleSearchResultsKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 func (m model) handleBodyEditKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 	case "esc":
+		m.discardPendingNewSticky()
 		m.bodyArea.Blur()
 		m.mode = modeNormal
 		m.editingSticky = -1
 		m.editingDate = ""
+		m.creatingSticky = false
 		return m, nil
 	case "ctrl+s":
 		return m.commitBodyEdit()
@@ -322,6 +324,7 @@ func (m model) commitBodyEdit() (tea.Model, tea.Cmd) {
 	m.mode = modeNormal
 	m.editingSticky = -1
 	m.editingDate = ""
+	m.creatingSticky = false
 	return m, m.flash("saved")
 }
 
@@ -462,6 +465,16 @@ func (m *model) resizeBodyArea() {
 	m.bodyArea.SetHeight(taH)
 }
 
+func (m *model) discardPendingNewSticky() {
+	if !m.creatingSticky {
+		return
+	}
+	if i := m.editingSticky; i >= 0 && i < len(m.stickies) {
+		m.stickies = append(m.stickies[:i], m.stickies[i+1:]...)
+		m.stickyCursor = clamp(m.stickyCursor, 0, max(0, len(m.stickies)-1))
+	}
+}
+
 func (m model) startNewSticky() (tea.Model, tea.Cmd) {
 	now := time.Now()
 	s := Sticky{
@@ -484,6 +497,7 @@ func (m model) startNewSticky() (tea.Model, tea.Cmd) {
 	m.resizeBodyArea()
 	m.bodyArea.Focus()
 	m.mode = modeBodyEdit
+	m.creatingSticky = true
 	return m, nil
 }
 
@@ -495,6 +509,7 @@ func (m model) editStickyBody() (tea.Model, tea.Cmd) {
 		m.resizeBodyArea()
 		m.bodyArea.Focus()
 		m.mode = modeBodyEdit
+		m.creatingSticky = false
 	}
 	return m, nil
 }
@@ -520,6 +535,7 @@ func (m model) editJournalBody() (tea.Model, tea.Cmd) {
 	if i := m.journalCursor; i >= 0 && i < len(m.journal) {
 		m.editingDate = m.journal[i].Date
 		m.editingSticky = -1
+		m.creatingSticky = false
 		m.bodyArea.SetValue(m.journal[i].Body)
 		m.resizeBodyArea()
 		m.bodyArea.Focus()
@@ -535,6 +551,7 @@ func (m model) openTodayJournal() (tea.Model, tea.Cmd) {
 		m.journalCursor = i
 		m.editingDate = date
 		m.editingSticky = -1
+		m.creatingSticky = false
 		m.bodyArea.SetValue(m.journal[i].Body)
 	} else {
 		e := JournalEntry{Date: date, Updated: time.Now()}
@@ -542,6 +559,7 @@ func (m model) openTodayJournal() (tea.Model, tea.Cmd) {
 		m.journalCursor = findJournal(m.journal, date)
 		m.editingDate = date
 		m.editingSticky = -1
+		m.creatingSticky = false
 		m.bodyArea.SetValue("")
 	}
 	m.resizeBodyArea()
@@ -599,9 +617,11 @@ type editorClosedMsg struct {
 
 func runEditor(path string, isJournal bool, date string) tea.Cmd {
 	editor := resolveEditor()
-	parts := strings.Fields(editor)
-	if len(parts) == 0 {
-		parts = []string{"vi"}
+	parts, err := splitCommandLine(editor)
+	if err != nil {
+		return func() tea.Msg {
+			return editorClosedMsg{err: err, isJournal: isJournal, date: date}
+		}
 	}
 	parts = append(parts, path)
 	cmd := exec.Command(parts[0], parts[1:]...)

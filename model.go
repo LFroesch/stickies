@@ -63,9 +63,9 @@ type model struct {
 	mode  appMode
 	focus focusPanel
 
-	stickies      []Sticky
-	stickyCursor  int
-	stickyScroll  int
+	stickies     []Sticky
+	stickyCursor int
+	stickyScroll int
 
 	journal       []JournalEntry
 	journalCursor int
@@ -74,6 +74,7 @@ type model struct {
 	bodyArea       textarea.Model
 	editingSticky  int // index into stickies, -1 if editing journal
 	editingDate    string
+	creatingSticky bool
 
 	metaInput textinput.Model
 	metaField metaField
@@ -82,7 +83,7 @@ type model struct {
 	searchQuery   string
 	searchResults []searchHit
 
-	deleteIndex   int
+	deleteIndex     int
 	deleteIsJournal bool
 
 	helpScroll int

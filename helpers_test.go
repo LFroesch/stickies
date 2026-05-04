@@ -63,3 +63,51 @@ func TestParseFrontmatterNoHeader(t *testing.T) {
 		t.Errorf("body should equal raw input")
 	}
 }
+
+func TestSplitCommandLine(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   string
+		want    []string
+		wantErr bool
+	}{
+		{
+			name:  "plain editor",
+			input: "nvim",
+			want:  []string{"nvim"},
+		},
+		{
+			name:  "quoted args",
+			input: `code --wait --reuse-window "/tmp/my notes.md"`,
+			want:  []string{"code", "--wait", "--reuse-window", "/tmp/my notes.md"},
+		},
+		{
+			name:  "escaped spaces",
+			input: `emacsclient --socket-name default /tmp/my\ notes.md`,
+			want:  []string{"emacsclient", "--socket-name", "default", "/tmp/my notes.md"},
+		},
+		{
+			name:    "unterminated quote",
+			input:   `code --wait "abc`,
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := splitCommandLine(tt.input)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("expected error, got args %v", got)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("splitCommandLine: %v", err)
+			}
+			if strings.Join(got, "\x00") != strings.Join(tt.want, "\x00") {
+				t.Fatalf("want %v, got %v", tt.want, got)
+			}
+		})
+	}
+}

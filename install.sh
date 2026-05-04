@@ -91,8 +91,9 @@ main() {
 
   mkdir -p "$INSTALL_DIR"
   install -m 0755 "$tmp_bin" "$INSTALL_DIR/$BINARY_NAME"
+  ln -sf "$BINARY_NAME" "$INSTALL_DIR/stk"
 
-  echo "Installed $BINARY_NAME to $INSTALL_DIR/$BINARY_NAME"
+  echo "Installed $BINARY_NAME to $INSTALL_DIR/$BINARY_NAME (alias: stk)"
   if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
     warn "$INSTALL_DIR is not in PATH"
     warn "Add this to your shell config: export PATH=\"$PATH:$INSTALL_DIR\""

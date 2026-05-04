@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -239,7 +240,7 @@ func deleteJournal(dir, date string) error {
 	return os.Remove(journalPath(dir, date))
 }
 
-func todayDate() string  { return time.Now().Format(dateLayout) }
+func todayDate() string { return time.Now().Format(dateLayout) }
 func yesterdayDate() string {
 	return time.Now().AddDate(0, 0, -1).Format(dateLayout)
 }
@@ -326,6 +327,61 @@ func resolveEditor() string {
 		return v
 	}
 	return "vi"
+}
+
+func splitCommandLine(s string) ([]string, error) {
+	var (
+		args         []string
+		current      strings.Builder
+		inSingle     bool
+		inDouble     bool
+		escapeNext   bool
+		tokenStarted bool
+	)
+
+	flush := func() {
+		if tokenStarted {
+			args = append(args, current.String())
+			current.Reset()
+			tokenStarted = false
+		}
+	}
+
+	for _, r := range s {
+		switch {
+		case escapeNext:
+			current.WriteRune(r)
+			tokenStarted = true
+			escapeNext = false
+		case r == '\\' && !inSingle:
+			escapeNext = true
+			tokenStarted = true
+		case r == '\'' && !inDouble:
+			inSingle = !inSingle
+			tokenStarted = true
+		case r == '"' && !inSingle:
+			inDouble = !inDouble
+			tokenStarted = true
+		case (r == ' ' || r == '\t' || r == '\n') && !inSingle && !inDouble:
+			flush()
+		default:
+			current.WriteRune(r)
+			tokenStarted = true
+		}
+	}
+
+	if escapeNext {
+		return nil, errors.New("unterminated escape in editor command")
+	}
+	if inSingle || inDouble {
+		return nil, errors.New("unterminated quote in editor command")
+	}
+
+	flush()
+	if len(args) == 0 {
+		return []string{"vi"}, nil
+	}
+	return args, nil
 }
 
 // --- Tag parsing ---

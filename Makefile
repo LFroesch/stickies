@@ -9,5 +9,6 @@ build:
 install: build
 	mkdir -p $(INSTALL_DIR)
 	install -m 0755 $(BIN) $(INSTALL_DIR)/$(BIN)
+	ln -sf $(BIN) $(INSTALL_DIR)/stk
 
 .PHONY: build install

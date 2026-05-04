@@ -1,11 +1,13 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"sort"
 	"strings"
+	"time"
 )
 
 // CLI subcommands for piping into other tools.
@@ -17,6 +19,8 @@ import (
 //   stickies day <YYYY-MM-DD>    print specified day's journal body
 //   stickies days                list journal dates
 //   stickies search <query>      print matches across stickies + journal
+//   stickies new [text]          create sticky from arg or stdin
+//   stickies log [text]          append timestamped line to today's journal
 
 func runCLI(cmd string, args []string, dataDir string, out io.Writer) int {
 	switch cmd {
@@ -44,9 +48,43 @@ func runCLI(cmd string, args []string, dataDir string, out io.Writer) int {
 			return 2
 		}
 		return cmdSearch(dataDir, strings.Join(args, " "), out)
+	case "new", "n":
+		body, err := argOrStdin(args)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "usage: stickies new <text>   (or pipe via stdin)")
+			return 2
+		}
+		return cmdNew(dataDir, body, out)
+	case "log", "l":
+		body, err := argOrStdin(args)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "usage: stickies log <text>   (or pipe via stdin)")
+			return 2
+		}
+		return cmdLog(dataDir, body, out)
 	}
 	fmt.Fprintf(os.Stderr, "unknown subcommand: %s\n", cmd)
 	return 2
+}
+
+// argOrStdin returns args joined with spaces, or stdin if args is empty and
+// stdin is piped. Returns an error when neither is available.
+func argOrStdin(args []string) (string, error) {
+	if len(args) > 0 {
+		return strings.Join(args, " "), nil
+	}
+	fi, err := os.Stdin.Stat()
+	if err != nil {
+		return "", err
+	}
+	if (fi.Mode() & os.ModeCharDevice) != 0 {
+		return "", errors.New("no input")
+	}
+	b, err := io.ReadAll(os.Stdin)
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
 }
 
 func cmdLs(dataDir string, out io.Writer) int {
@@ -131,6 +169,54 @@ func cmdSearch(dataDir, query string, out io.Writer) int {
 			fmt.Fprintf(out, "sticky\t%s\t%s\n", shortID(s[h.stickyIdx].ID), h.preview)
 		}
 	}
+	return 0
+}
+
+func cmdNew(dataDir, body string, out io.Writer) int {
+	body = strings.TrimRight(body, "\n")
+	if strings.TrimSpace(body) == "" {
+		fmt.Fprintln(os.Stderr, "stickies new: empty body")
+		return 2
+	}
+	now := time.Now()
+	s := Sticky{
+		ID:      newID(),
+		Body:    body,
+		Created: now,
+		Updated: now,
+	}
+	if err := saveSticky(dataDir, s); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return 1
+	}
+	fmt.Fprintf(out, "%s\t%s\n", shortID(s.ID), firstLine(s.Body))
+	return 0
+}
+
+func cmdLog(dataDir, line string, out io.Writer) int {
+	line = strings.TrimRight(line, "\n")
+	if strings.TrimSpace(line) == "" {
+		fmt.Fprintln(os.Stderr, "stickies log: empty entry")
+		return 2
+	}
+	j, err := loadJournal(dataDir)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return 1
+	}
+	date := todayDate()
+	now := time.Now()
+	entry := fmt.Sprintf("- %s %s", now.Format("15:04"), line)
+	body := entry
+	if i := findJournal(j, date); i >= 0 && j[i].Body != "" {
+		body = j[i].Body + "\n" + entry
+	}
+	e := JournalEntry{Date: date, Body: body, Updated: now}
+	if err := saveJournal(dataDir, e); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return 1
+	}
+	fmt.Fprintln(out, entry)
 	return 0
 }
 

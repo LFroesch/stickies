@@ -18,7 +18,7 @@ func main() {
 	// Subcommand dispatch (positional verb before flags) for piping.
 	if len(os.Args) > 1 {
 		switch os.Args[1] {
-		case "ls", "list", "cat", "show", "get", "today", "day", "days", "search", "grep":
+		case "ls", "list", "cat", "show", "get", "today", "day", "days", "search", "grep", "new", "n", "log", "l":
 			dir, err := resolveDataDir(envDataDir())
 			if err != nil {
 				log.Fatal(err)
@@ -41,7 +41,9 @@ func main() {
 		fmt.Fprintf(os.Stderr, "  stickies today                print today's journal entry\n")
 		fmt.Fprintf(os.Stderr, "  stickies day <YYYY-MM-DD>     print specified day's entry\n")
 		fmt.Fprintf(os.Stderr, "  stickies days                 list journal dates\n")
-		fmt.Fprintf(os.Stderr, "  stickies search <query>       grep across stickies+journal\n\n")
+		fmt.Fprintf(os.Stderr, "  stickies search <query>       grep across stickies+journal\n")
+		fmt.Fprintf(os.Stderr, "  stickies new <text>           new sticky from arg or stdin\n")
+		fmt.Fprintf(os.Stderr, "  stickies log <text>           append timestamped line to today's journal\n\n")
 		fmt.Fprintf(os.Stderr, "Flags:\n")
 		flag.PrintDefaults()
 	}

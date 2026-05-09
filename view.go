@@ -23,12 +23,6 @@ func (m model) View() string {
 	if m.width == 0 || m.height == 0 {
 		return "loading..."
 	}
-	if m.width < minTerminalW || m.height < minTerminalH {
-		return errorTextStyle.Render(fmt.Sprintf(
-			"terminal too small: %dx%d\nminimum: %dx%d\nresize or zoom out",
-			m.width, m.height, minTerminalW, minTerminalH,
-		))
-	}
 
 	header := m.renderHeader()
 	footer := m.renderFooter()

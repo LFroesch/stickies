@@ -428,9 +428,6 @@ func (m model) handleHelpKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 // resizeBodyArea recomputes the textarea dimensions to fit the right panel
 // inside the current page layout (stickies vs. journal).
 func (m *model) resizeBodyArea() {
-	if m.width < minTerminalW || m.height < minTerminalH {
-		return
-	}
 	bodyH := m.height - 2 // header + footer
 	if bodyH < 6 {
 		bodyH = 6

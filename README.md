@@ -1,6 +1,8 @@
 # stickies
 
-Quick notes and a daily journal in one terminal app. `stickies` has a full-screen TUI for browsing and editing, plus a small CLI for piping notes in and reading them back out.
+Quick notes and a daily journal in one terminal app. `stickies` is for lightweight personal capture: fast notes, day-based journaling, and a small CLI that stays friendly to pipes.
+
+![stickies hero screenshot](assets/screenshots/hero.png)
 
 ## Install
 

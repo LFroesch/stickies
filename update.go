@@ -173,9 +173,9 @@ func (m model) handleStickiesKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.stickyCursor = len(m.stickies) - 1
 		}
 	case "ctrl+d":
-		m.stickyCursor = clamp(m.stickyCursor+5, 0, max(0, len(m.stickies)-1))
+		m.stickyCursor = clamp(m.stickyCursor+m.listPageStep(), 0, max(0, len(m.stickies)-1))
 	case "ctrl+u":
-		m.stickyCursor = clamp(m.stickyCursor-5, 0, max(0, len(m.stickies)-1))
+		m.stickyCursor = clamp(m.stickyCursor-m.listPageStep(), 0, max(0, len(m.stickies)-1))
 	case "p":
 		if i := m.stickyCursor; i >= 0 && i < len(m.stickies) {
 			m.stickies[i].Pinned = !m.stickies[i].Pinned
@@ -232,6 +232,10 @@ func (m model) handleJournalKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if len(m.journal) > 0 {
 			m.journalCursor = len(m.journal) - 1
 		}
+	case "ctrl+d":
+		m.journalCursor = clamp(m.journalCursor+m.listPageStep(), 0, max(0, len(m.journal)-1))
+	case "ctrl+u":
+		m.journalCursor = clamp(m.journalCursor-m.listPageStep(), 0, max(0, len(m.journal)-1))
 	case "E", "enter":
 		return m.editJournalBody()
 	case "o", "O":
@@ -424,6 +428,14 @@ func (m model) handleHelpKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 }
 
 // --- Action helpers ---
+
+func (m model) listPageStep() int {
+	step := m.bodyHeight()/2 - 1
+	if step < 1 {
+		return 1
+	}
+	return step
+}
 
 // resizeBodyArea recomputes the textarea dimensions to fit the right panel
 // inside the current page layout (stickies vs. journal).

@@ -1,6 +1,10 @@
 package main
 
-import "testing"
+import (
+	"testing"
+
+	tea "github.com/charmbracelet/bubbletea"
+)
 
 func TestDiscardPendingNewStickyRemovesUnsavedPlaceholder(t *testing.T) {
 	m := model{
@@ -24,5 +28,40 @@ func TestDiscardPendingNewStickyRemovesUnsavedPlaceholder(t *testing.T) {
 	}
 	if m.stickyCursor != 1 {
 		t.Fatalf("expected cursor to clamp to remaining item, got %d", m.stickyCursor)
+	}
+}
+
+func TestHandleJournalKeyCtrlDAndCtrlUPageByVisibleBody(t *testing.T) {
+	m := model{
+		height:        24,
+		journal:       make([]JournalEntry, 20),
+		journalCursor: 0,
+	}
+
+	next, _ := m.handleJournalKey(tea.KeyMsg{Type: tea.KeyCtrlD})
+	gotDown := next.(model).journalCursor
+	if gotDown != 10 {
+		t.Fatalf("expected ctrl+d to move journal cursor by 10, got %d", gotDown)
+	}
+
+	m.journalCursor = 15
+	prev, _ := m.handleJournalKey(tea.KeyMsg{Type: tea.KeyCtrlU})
+	gotUp := prev.(model).journalCursor
+	if gotUp != 5 {
+		t.Fatalf("expected ctrl+u to move journal cursor back by 10, got %d", gotUp)
+	}
+}
+
+func TestHandleStickiesKeyCtrlDUsesDynamicPageStep(t *testing.T) {
+	m := model{
+		height:       18,
+		stickies:     make([]Sticky, 20),
+		stickyCursor: 2,
+	}
+
+	next, _ := m.handleStickiesKey(tea.KeyMsg{Type: tea.KeyCtrlD})
+	got := next.(model).stickyCursor
+	if got != 9 {
+		t.Fatalf("expected ctrl+d to move sticky cursor by 7, got %d", got)
 	}
 }

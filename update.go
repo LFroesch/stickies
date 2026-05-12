@@ -288,6 +288,9 @@ func (m model) handleBodyEditKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case "ctrl+s":
 		return m.commitBodyEdit()
+	case "ctrl+d":
+		m.deleteCurrentBodyRow()
+		return m, nil
 	}
 	var cmd tea.Cmd
 	m.bodyArea, cmd = m.bodyArea.Update(msg)
@@ -435,6 +438,28 @@ func (m model) listPageStep() int {
 		return 1
 	}
 	return step
+}
+
+func (m *model) deleteCurrentBodyRow() {
+	lines := strings.Split(m.bodyArea.Value(), "\n")
+	if len(lines) == 0 {
+		m.bodyArea.SetValue("")
+		return
+	}
+
+	row := clamp(m.bodyArea.Line(), 0, len(lines)-1)
+	lines = append(lines[:row], lines[row+1:]...)
+	if len(lines) == 0 {
+		m.bodyArea.SetValue("")
+		return
+	}
+
+	m.bodyArea.SetValue(strings.Join(lines, "\n"))
+	targetRow := clamp(row, 0, len(lines)-1)
+	for i := 0; i < targetRow; i++ {
+		m.bodyArea.CursorDown()
+	}
+	m.bodyArea.CursorStart()
 }
 
 // resizeBodyArea recomputes the textarea dimensions to fit the right panel

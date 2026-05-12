@@ -118,7 +118,7 @@ func (m model) footerHint() string {
 
 	switch m.mode {
 	case modeBodyEdit:
-		return join(pair("ctrl+s", "save"), pair("ctrl+d", "del"), pair("home/end", "bol/eol"), pair("esc", "cancel"))
+		return join(pair("ctrl+s", "save"), pair("ctrl+d", "del row"), pair("home/end", "bol/eol"), pair("esc", "cancel"))
 	case modeMetaEdit:
 		return join(pair("enter", "save"), pair("esc", "cancel"))
 	case modeDeleteConfirm:
@@ -480,7 +480,7 @@ func (m model) renderHelpPanel() string {
 		"",
 		dateHeaderStyle.Render("edit mode"),
 		"  ctrl+s          save · close",
-		"  ctrl+d          delete char forward",
+		"  ctrl+d          delete row",
 		"  home / end      line start / end",
 		"  ctrl+a / ctrl+e line start / end",
 		"  alt+b / alt+f   word back / forward",

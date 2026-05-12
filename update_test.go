@@ -3,6 +3,7 @@ package main
 import (
 	"testing"
 
+	"github.com/charmbracelet/bubbles/textarea"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -63,5 +64,37 @@ func TestHandleStickiesKeyCtrlDUsesDynamicPageStep(t *testing.T) {
 	got := next.(model).stickyCursor
 	if got != 9 {
 		t.Fatalf("expected ctrl+d to move sticky cursor by 7, got %d", got)
+	}
+}
+
+func TestDeleteCurrentBodyRowRemovesActiveMiddleLine(t *testing.T) {
+	body := textarea.New()
+	body.SetValue("first\nsecond\nthird")
+	body.CursorUp()
+	body.CursorStart()
+
+	m := model{bodyArea: body}
+	m.deleteCurrentBodyRow()
+
+	if got := m.bodyArea.Value(); got != "first\nthird" {
+		t.Fatalf("expected middle row to be deleted, got %q", got)
+	}
+	if got := m.bodyArea.Line(); got != 1 {
+		t.Fatalf("expected cursor to land on replacement row, got line %d", got)
+	}
+}
+
+func TestDeleteCurrentBodyRowClearsOnlyLine(t *testing.T) {
+	body := textarea.New()
+	body.SetValue("only")
+
+	m := model{bodyArea: body}
+	m.deleteCurrentBodyRow()
+
+	if got := m.bodyArea.Value(); got != "" {
+		t.Fatalf("expected only row to be deleted, got %q", got)
+	}
+	if got := m.bodyArea.Line(); got != 0 {
+		t.Fatalf("expected cursor to reset to first line, got line %d", got)
 	}
 }

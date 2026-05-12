@@ -60,6 +60,7 @@ func (m model) renderHeader() string {
 	}
 
 	title := lipgloss.NewStyle().Background(bgColor).Foreground(headerFg).Bold(true).Inline(true).Render("📒 stickies")
+	title += dimOnBg.Render(" " + version)
 	tabs := tab("1 stickies", m.page == pageStickies) + dimOnBg.Render("  ") +
 		tab("2 journal", m.page == pageJournal) + dimOnBg.Render("  ") +
 		tab("3 search", m.page == pageSearch)

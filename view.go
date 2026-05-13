@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/LFroesch/tui-suite/suitechrome"
+	"github.com/LFroesch/stickies/suitechrome"
 	"github.com/charmbracelet/lipgloss"
 )
 

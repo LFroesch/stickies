@@ -4,9 +4,11 @@ Quick notes and a daily journal in one terminal app. `stickies` is for lightweig
 
 ![stickies hero screenshot](assets/screenshots/hero.png)
 
+**Live demo:** [froesch.dev](https://froesch.dev)
+
 ## Install
 
-Supported platforms: Linux and macOS. On Windows, use WSL.
+Supported platforms: Linux, macOS, and Windows.
 
 Recommended:
 
@@ -19,6 +21,16 @@ Other options:
 ```bash
 go install github.com/LFroesch/stickies@latest
 make install
+```
+
+Windows:
+
+```powershell
+./install.ps1
+```
+
+```bat
+install.cmd
 ```
 
 Commands:

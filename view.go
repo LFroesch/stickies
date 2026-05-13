@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/LFroesch/tui-suite/suitechrome"
 	"github.com/charmbracelet/lipgloss"
 )
 
@@ -37,84 +38,43 @@ func (m model) View() string {
 	return lipgloss.JoinVertical(lipgloss.Left, header, body, footer)
 }
 
-// --- Header (1 line, full-width bg) ---
+// --- Header ---
 
 func (m model) renderHeader() string {
-	style := lipgloss.NewStyle().
-		Bold(true).
-		Background(bgColor).
-		Foreground(headerFg).
-		Padding(0, 1).
-		Width(m.width).
-		MaxHeight(1)
-
-	dimOnBg := lipgloss.NewStyle().Background(bgColor).Foreground(lipgloss.Color("244")).Inline(true)
-	tabOn := lipgloss.NewStyle().Background(bgColor).Foreground(headerFg).Bold(true).Underline(true).Inline(true)
-	tabOff := lipgloss.NewStyle().Background(bgColor).Foreground(lipgloss.Color("244")).Inline(true)
-
-	tab := func(label string, active bool) string {
-		if active {
-			return tabOn.Render(label)
-		}
-		return tabOff.Render(label)
-	}
-
-	title := lipgloss.NewStyle().Background(bgColor).Foreground(headerFg).Bold(true).Inline(true).Render("📒 stickies")
-	title += dimOnBg.Render(" " + version)
-	tabs := tab("1 stickies", m.page == pageStickies) + dimOnBg.Render("  ") +
-		tab("2 journal", m.page == pageJournal) + dimOnBg.Render("  ") +
-		tab("3 search", m.page == pageSearch)
+	title := suitechrome.RenderTitle("stickies", version)
+	tabs := suitechrome.RenderTabs([]suitechrome.Tab{
+		{Label: "1 stickies", Active: m.page == pageStickies},
+		{Label: "2 journal", Active: m.page == pageJournal},
+		{Label: "3 search", Active: m.page == pageSearch},
+	})
 
 	var count string
 	switch m.page {
 	case pageStickies:
-		count = dimOnBg.Render(fmt.Sprintf("%d notes", len(m.stickies)))
+		count = suitechrome.Dim(fmt.Sprintf("%d notes", len(m.stickies)))
 	case pageJournal:
-		count = dimOnBg.Render(fmt.Sprintf("%d days", len(m.journal)))
+		count = suitechrome.Dim(fmt.Sprintf("%d days", len(m.journal)))
 	case pageSearch:
-		count = dimOnBg.Render(fmt.Sprintf("%d hits", len(m.searchResults)))
+		count = suitechrome.Dim(fmt.Sprintf("%d hits", len(m.searchResults)))
 	}
 
-	left := title + dimOnBg.Render("  ") + tabs
-	gap := m.width - lipgloss.Width(left) - lipgloss.Width(count) - 2
-	if gap < 1 {
-		gap = 1
-	}
-	line := left + dimOnBg.Render(strings.Repeat(" ", gap)) + count
-	return style.Render(line)
+	return suitechrome.JoinHeader(m.width, title+"  "+tabs, count)
 }
 
-// --- Footer (1 line, full-width bg) ---
+// --- Footer ---
 
 func (m model) renderFooter() string {
-	style := lipgloss.NewStyle().
-		Background(bgColor).
-		Foreground(statusValueFg).
-		Padding(0, 1).
-		Width(m.width).
-		MaxHeight(1)
-
 	hint := m.footerHint()
 	status := ""
 	if m.statusMsg != "" {
-		status = lipgloss.NewStyle().Background(bgColor).Foreground(lipgloss.Color("82")).Bold(true).Inline(true).Render(m.statusMsg)
+		status = lipgloss.NewStyle().Foreground(lipgloss.Color("82")).Bold(true).Inline(true).Render(m.statusMsg)
 	}
-
-	gap := m.width - lipgloss.Width(hint) - lipgloss.Width(status) - 2
-	if gap < 1 {
-		gap = 1
-	}
-	pad := lipgloss.NewStyle().Background(bgColor).Render(strings.Repeat(" ", gap))
-	return style.Render(hint + pad + status)
+	return suitechrome.JoinLine(m.width, hint, status)
 }
 
 func (m model) footerHint() string {
-	key := lipgloss.NewStyle().Background(bgColor).Foreground(statusKeyFg).Bold(true).Inline(true)
-	desc := lipgloss.NewStyle().Background(bgColor).Foreground(statusValueFg).Inline(true)
-	sep := lipgloss.NewStyle().Background(bgColor).Foreground(lipgloss.Color("240")).Inline(true).Render(" · ")
-
-	pair := func(k, d string) string { return key.Render(k) + desc.Render(" "+d) }
-	join := func(parts ...string) string { return strings.Join(parts, sep) }
+	pair := func(k, d string) suitechrome.Action { return suitechrome.Action{Key: k, Label: d} }
+	join := func(parts ...suitechrome.Action) string { return suitechrome.RenderActions(parts) }
 
 	switch m.mode {
 	case modeBodyEdit:
@@ -122,8 +82,8 @@ func (m model) footerHint() string {
 	case modeMetaEdit:
 		return join(pair("enter", "save"), pair("esc", "cancel"))
 	case modeDeleteConfirm:
-		warn := lipgloss.NewStyle().Background(bgColor).Foreground(lipgloss.Color("196")).Bold(true).Inline(true)
-		return warn.Render("delete? ") + pair("y", "yes") + sep + pair("n/esc", "no")
+		warn := lipgloss.NewStyle().Foreground(lipgloss.Color("196")).Bold(true).Inline(true)
+		return warn.Render("delete? ") + join(pair("y", "yes"), pair("n/esc", "no"))
 	case modeSearch:
 		return join(pair("enter", "lock"), pair("esc", "exit"))
 	}
